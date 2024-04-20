@@ -1,5 +1,30 @@
 #include <Arduino.h>
 #include <EspSimHub.h>
+#include <BleGamepad.h>
+#include <Rotary.h>
+
+BleGamepad bleGamepad("Round Wheel", "Harold");
+
+Rotary enca = Rotary(30,31);
+Rotary encb = Rotary(22,23);
+Rotary encc = Rotary(36,39);
+Rotary encd = Rotary(29,33);
+
+#define MATRIX_ROWS   5
+#define MATRIX_COLS   4
+
+#define SHIFTER_L_GPIO    14
+#define SHIFTER_R_GPIO    12
+
+#define numOfButtons 30
+
+byte previousButtonStates[numOfButtons];
+byte currentButtonStates[numOfButtons];
+
+const int matrix_row_pins[MATRIX_ROWS] = {32, 33, 25, 26, 27};
+const int matrix_col_pins[MATRIX_COLS] = {15, 2, 0, 4};
+
+bool button_matrix[MATRIX_COLS][MATRIX_ROWS];
 
 // No longer have to define whether it's an ESP32 or ESP8266, just do an initial compilation and
 //  VSCode will pick  up the right environment from platformio.ini
@@ -32,7 +57,7 @@ FullLoopbackStream incomingStream;
 // Known working features:
 //  
 //#define INCLUDE_RGB_LEDS_NEOPIXELBUS        // use this instead of INCLUDE_WS2812B
-//#define INCLUDE_WS2812B                     // consider using INCLUDE_RGB_LEDS_NEOPIXELBUS {"Name":"INCLUDE_WS2812B","Type":"autodefine","Condition":"[WS2812B_RGBLEDCOUNT]>0"}
+#define INCLUDE_WS2812B                     // consider using INCLUDE_RGB_LEDS_NEOPIXELBUS {"Name":"INCLUDE_WS2812B","Type":"autodefine","Condition":"[WS2812B_RGBLEDCOUNT]>0"}
 //#define INCLUDE_WS2812B_MATRIX              // consider using INCLUDE_WS2812B_MATRIX		 {"Name":"INCLUDE_WS2812B_MATRIX","Type":"autodefine","Condition":"[WS2812B_MATRIX_ENABLED]>0"}
 //#define INCLUDE_BUTTONS                     //{"Name":"INCLUDE_BUTTONS","Type":"autodefine","Condition":"[ENABLED_BUTTONS_COUNT]>0","IsInput":true}
 //#define INCLUDE_BUTTONMATRIX                //{"Name":"INCLUDE_BUTTONMATRIX","Type":"autodefine","Condition":"[ENABLED_BUTTONMATRIX]>0","IsInput":true}
@@ -267,10 +292,10 @@ SHMatrixHT16H33SingleColor shMatrixHT16H33SingleColor;
 // -------------------------------------------------------------------------------------------------------
 // WS2812b chained RGBLEDS count
 // 0 disabled, > 0 enabled
-#define WS2812B_RGBLEDCOUNT 0        //{"Group":"WS2812B RGB Leds","Name":"WS2812B_RGBLEDCOUNT","Title":"WS2812B RGB leds count","DefaultValue":"0","Type":"int","Max":150}
+#define WS2812B_RGBLEDCOUNT 20        //{"Group":"WS2812B RGB Leds","Name":"WS2812B_RGBLEDCOUNT","Title":"WS2812B RGB leds count","DefaultValue":"0","Type":"int","Max":150}
 #ifdef INCLUDE_WS2812B
 
-#define WS2812B_DATAPIN 33  		 //{"Name":"WS2812B_DATAPIN","Title":"Data (DIN) digital pin number","DefaultValue":"6","Type":"pin;WS2812B LEDS DATA","Condition":"WS2812B_RGBLEDCOUNT>0"}
+#define WS2812B_DATAPIN 12  		 //{"Name":"WS2812B_DATAPIN","Title":"Data (DIN) digital pin number","DefaultValue":"6","Type":"pin;WS2812B LEDS DATA","Condition":"WS2812B_RGBLEDCOUNT>0"}
 #define WS2812B_RGBENCODING 0        //{"Name":"WS2812B_RGBENCODING","Title":"WS2812B RGB encoding\r\nSet to 0 for GRB, 1 for RGB encoding, 2 for BRG encoding","DefaultValue":"0","Type":"list","Condition":"WS2812B_RGBLEDCOUNT>0","ListValues":"0,GRB encoding;1,RGB encoding;2,BRG encoding"}
 #define WS2812B_RIGHTTOLEFT 0        //{"Name":"WS2812B_RIGHTTOLEFT","Title":"Reverse led order ","DefaultValue":"0","Type":"bool","Condition":"WS2812B_RGBLEDCOUNT>0"}
 #define WS2812B_TESTMODE 1           //{"Name":"WS2812B_TESTMODE","Title":"TESTING MODE : Light up all configured leds (in red color) at arduino startup\r\nIt will clear after simhub connection","DefaultValue":"0","Type":"bool","Condition":"WS2812B_RGBLEDCOUNT>0"}
@@ -1111,6 +1136,29 @@ void buttonMatrixStatusChanged(int buttonId, byte Status) {
 
 void setup()
 {
+//Encoder setup
+enca.begin(true);
+encb.begin(true);
+encc.begin(true);
+encd.begin(true);
+
+	//Gamepad setup
+	BleGamepadConfiguration bleGamepadConfig;
+	bleGamepadConfig.setAutoReport(false);
+
+	bleGamepad.begin(&bleGamepadConfig);
+
+	  // Matrix input pins
+pinMode(matrix_row_pins[0], INPUT_PULLUP); 
+pinMode(matrix_row_pins[1], INPUT_PULLUP); 
+pinMode(matrix_row_pins[2], INPUT_PULLUP); 
+pinMode(matrix_row_pins[3], INPUT_PULLUP);
+pinMode(matrix_row_pins[4], INPUT_PULLUP);
+    // Shifters
+pinMode(SHIFTER_L_GPIO, INPUT_PULLUP);
+pinMode(SHIFTER_R_GPIO, INPUT_PULLUP);
+
+
 #if INCLUDE_WIFI
 #if DEBUG_TCP_BRIDGE
 	Serial.begin(115200);
@@ -1287,7 +1335,7 @@ void setup()
 	);
 #endif
 
-#ifdef  INCLUDE_ENCODERS
+#ifdef INCLUDE_ENCODERS
 	InitEncoders();
 #endif
 
@@ -1339,14 +1387,14 @@ void UpdateGamepadState() {
 	}
 #endif
 
-#ifdef INCLUDE_ENCODERS
+//#ifdef INCLUDE_ENCODERS
 	UpdateGamepadEncodersState(false);
-#endif
+//#endif
 
 	Joystick.sendState();
 }
 
-#ifdef INCLUDE_ENCODERS
+//#ifdef INCLUDE_ENCODERS
 void UpdateGamepadEncodersState(bool sendState) {
 	int btnidx = TM1638_ENABLEDMODULES * 8 + ENABLED_BUTTONS_COUNT + ENABLED_BUTTONMATRIX * (BMATRIX_COLS * BMATRIX_ROWS);
 	unsigned long refTime = millis();
@@ -1362,8 +1410,9 @@ void UpdateGamepadEncodersState(bool sendState) {
 	if (sendState)
 		Joystick.sendState();
 }
+//#endif
 #endif
-#endif
+
 
 char loop_opt;
 char xactionc;
@@ -1449,4 +1498,189 @@ void loop() {
 	if (millis() - lastSerialActivity > 5000) {
 		Command_Shutdown();
 	}
+	  if(bleGamepad.isConnected()) 
+  {
+
+	unsigned char enca_dir = enca.process();
+	unsigned char encb_dir = encb.process();
+	unsigned char encc_dir = encc.process();
+	unsigned char encd_dir = encd.process();
+
+       // Read matrix
+    for(int col_i = 0; col_i < MATRIX_COLS; col_i++)
+    {
+      pinMode(matrix_col_pins[col_i], OUTPUT);
+      digitalWrite(matrix_col_pins[col_i], LOW);
+      delayMicroseconds(10); 
+      for(int row_i = 0; row_i < MATRIX_ROWS; row_i++)
+      {
+        button_matrix[col_i][row_i] = !digitalRead(matrix_row_pins[row_i]);
+      }
+      pinMode(matrix_col_pins[col_i], INPUT);
+    }
+	    // Set report states
+    if(button_matrix[0][0]) 
+      bleGamepad.press(BUTTON_1);
+    else
+      bleGamepad.release(BUTTON_1);
+  
+    if(button_matrix[0][1]) 
+      bleGamepad.press(BUTTON_2);
+    else
+      bleGamepad.release(BUTTON_2);
+  
+    if(button_matrix[0][2]) 
+      bleGamepad.press(BUTTON_3);
+    else
+      bleGamepad.release(BUTTON_3);
+  
+    if(button_matrix[0][3]) 
+      bleGamepad.press(BUTTON_4);
+    else
+      bleGamepad.release(BUTTON_4);
+  
+    if(button_matrix[0][4]) 
+      bleGamepad.press(BUTTON_5);
+    else
+      bleGamepad.release(BUTTON_5);
+  
+    if(button_matrix[1][0]) 
+      bleGamepad.press(BUTTON_6);
+    else
+      bleGamepad.release(BUTTON_6);
+  
+    if(button_matrix[1][1]) 
+      bleGamepad.press(BUTTON_7);
+    else
+      bleGamepad.release(BUTTON_7);
+  
+    if(button_matrix[1][2]) 
+      bleGamepad.press(BUTTON_8);
+    else
+      bleGamepad.release(BUTTON_8);
+  
+    if(button_matrix[1][3]) 
+      bleGamepad.press(BUTTON_9);
+    else
+      bleGamepad.release(BUTTON_9);
+  
+    if(button_matrix[1][4]) 
+      bleGamepad.press(BUTTON_10);
+    else
+      bleGamepad.release(BUTTON_10);
+  
+    if(button_matrix[2][0]) 
+      bleGamepad.press(BUTTON_11);
+    else
+      bleGamepad.release(BUTTON_11);
+  
+    if(button_matrix[2][1]) 
+      bleGamepad.press(BUTTON_12);
+    else
+      bleGamepad.release(BUTTON_12);
+  
+    if(button_matrix[2][2]) 
+      bleGamepad.press(BUTTON_13);
+    else
+      bleGamepad.release(BUTTON_13);
+
+    if(button_matrix[2][3]) 
+      bleGamepad.press(BUTTON_14);
+    else
+      bleGamepad.release(BUTTON_14);
+
+     if(button_matrix[2][4]) 
+      bleGamepad.press(BUTTON_15);
+    else
+      bleGamepad.release(BUTTON_15);
+
+     if(button_matrix[3][0]) 
+      bleGamepad.press(BUTTON_16);
+    else
+      bleGamepad.release(BUTTON_16);
+  
+      if(button_matrix[3][1]) 
+      bleGamepad.press(BUTTON_17);
+    else
+      bleGamepad.release(BUTTON_17);
+
+     if(button_matrix[3][2]) 
+      bleGamepad.press(BUTTON_18);
+    else
+      bleGamepad.release(BUTTON_18);
+
+     if(button_matrix[3][3]) 
+      bleGamepad.press(BUTTON_19);
+    else
+      bleGamepad.release(BUTTON_19);
+
+     if(button_matrix[3][4]) 
+      bleGamepad.press(BUTTON_20);
+    else
+      bleGamepad.release(BUTTON_20);
+
+    if(!digitalRead(SHIFTER_L_GPIO)) 
+      bleGamepad.press(BUTTON_21);
+    else
+      bleGamepad.release(BUTTON_21);
+  
+    if(!digitalRead(SHIFTER_R_GPIO)) 
+      bleGamepad.press(BUTTON_22);
+    else
+      bleGamepad.release(BUTTON_22);
+
+	if(enca_dir){
+		if(enca_dir == DIR_CW){
+			bleGamepad.press(BUTTON_23);
+		}
+		else
+			bleGamepad.press(BUTTON_24);
+	}
+	else{ 
+		bleGamepad.release(BUTTON_23);
+		bleGamepad.release(BUTTON_24);
+	}
+
+	if(encb_dir){
+		if(encb_dir == DIR_CW){
+			bleGamepad.press(BUTTON_25);
+		}
+		else
+			bleGamepad.press(BUTTON_26);
+	}
+	else{ 
+		bleGamepad.release(BUTTON_25);
+		bleGamepad.release(BUTTON_26);
+	}
+
+	if(encc_dir){
+		if(encc_dir == DIR_CW){
+			bleGamepad.press(BUTTON_27);
+		}
+		else
+			bleGamepad.press(BUTTON_28);
+	}
+	else{ 
+		bleGamepad.release(BUTTON_27);
+		bleGamepad.release(BUTTON_28);
+	}
+	
+	if(encd_dir){
+		if(encd_dir == DIR_CW){
+			bleGamepad.press(BUTTON_29);
+		}
+		else
+			bleGamepad.press(BUTTON_30);
+	}
+	else{ 
+		bleGamepad.release(BUTTON_29);
+		bleGamepad.release(BUTTON_30);
+	}
+
+
+		 // Send report
+    bleGamepad.sendReport();
+  
+    // Wait 5ms
+    delay(5);
 }
