@@ -1145,7 +1145,10 @@ encd.begin(true);
 	//Gamepad setup
 	BleGamepadConfiguration bleGamepadConfig;
 	bleGamepadConfig.setAutoReport(false);
-
+	bleGamepadConfig.setButtonCount(numOfButtons);
+	bleGamepadConfig.setControllerType(CONTROLLER_TYPE_GAMEPAD);
+	bleGamepadConfig.setVid(0xe502);
+    bleGamepadConfig.setPid(0xabc9);
 	bleGamepad.begin(&bleGamepadConfig);
 
 	  // Matrix input pins
@@ -1683,4 +1686,5 @@ void loop() {
   
     // Wait 5ms
     delay(5);
+}
 }
