@@ -5,16 +5,16 @@
 
 BleGamepad bleGamepad("Round Wheel", "Harold");
 
-Rotary enca = Rotary(30,31);
-Rotary encb = Rotary(22,23);
-Rotary encc = Rotary(36,39);
-Rotary encd = Rotary(29,33);
+Rotary enca = Rotary(5,17);
+Rotary encb = Rotary(13,14);
+Rotary encc = Rotary(18,19);
+Rotary encd = Rotary(22,23);
 
 #define MATRIX_ROWS   5
 #define MATRIX_COLS   4
 
-#define SHIFTER_L_GPIO    14
-#define SHIFTER_R_GPIO    12
+#define SHIFTER_L_GPIO    39
+#define SHIFTER_R_GPIO    36
 
 #define numOfButtons 30
 
