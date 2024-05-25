@@ -5,7 +5,7 @@
 
 BleGamepad bleGamepad("Round Wheel", "Harold");
 
-Rotary enca = Rotary(5,17);
+Rotary enca = Rotary(6,7);
 Rotary encb = Rotary(13,14);
 Rotary encc = Rotary(18,19);
 Rotary encd = Rotary(22,23);
@@ -22,7 +22,7 @@ byte previousButtonStates[numOfButtons];
 byte currentButtonStates[numOfButtons];
 
 const int matrix_row_pins[MATRIX_ROWS] = {32, 33, 25, 26, 27};
-const int matrix_col_pins[MATRIX_COLS] = {15, 2, 0, 4};
+const int matrix_col_pins[MATRIX_COLS] = {15, 4, 16, 17};
 
 bool button_matrix[MATRIX_COLS][MATRIX_ROWS];
 
